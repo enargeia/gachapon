@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<!-- gachapon / prize machine widget for neocities.
+  notes:
+  - images are placeholders (replace src="")
+  - text in html is user-facing content
+  - colors in :root
+  - audio optional (safe to remove) 
+  - check README.md for instructions-->
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> Prize Gachapon</title>
+
+  <style>
+
+/* theme colors */
+:root {
+  --black: #050505;
+  --pearl: #f0e6f6;
+  --shell-pink: #f0b5c8;
+  --shell-lavender: #c4a8d6;
+  --shell-teal: #7dc4b4;
+  --shell-gold: #e8d48b;
+  --nacre-pink: #f7cad3;
+  --nacre-lavender: #d9c2ea;
+  --nacre-teal: #a8d8cc;
+  --panel-bg: #1a1225;
+  --panel-border: #c4a8d6;
+  --starburst-start: #a8d8cc;
+  --starburst-end: #f0e6f6;
+}
+
+/* font files */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body {
+  background-color: var(--black);
+  color: #fff;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* tiled background */
+.tiled-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="/images/yourimage.png" width="200" height="200" viewBox="0 0 200 200"%3E%3Ccircle cx="100" cy="100" r="80" fill="none" stroke="%23c4a8d6" stroke-width="0.5" opacity="0.15"/%3E%3Ccircle cx="100" cy="100" r="50" fill="none" stroke="%23c4a8d6" stroke-width="0.3" opacity="0.1"/%3E%3C/svg%3E');
+  background-size: 200px;
+  background-repeat: repeat;
+  opacity: 0.20;
+  z-index: -1;
+  animation: bgShift 20s linear infinite;
+}
+
+@keyframes bgShift {
+  0% { background-position: 0 0; }
+  100% { background-position: 200px 200px; }
+}
+
+/* return link */
+.return-btn {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  color: var(--pearl);
+  text-decoration: none;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(247, 202, 211, 0.4);
+  z-index: 200;
+  transition: text-shadow 0.3s, color 0.3s;
+}
+
+.return-btn:hover {
+  text-shadow: 0 0 15px rgba(125, 196, 180, 0.6);
+  color: var(--shell-teal);
+}
+
+/* vertical marquee */
+.marquee-wrapper {
+  position: fixed;
+  right: 50px;
+  top: 0;
+  height: 100vh;
+  width: 60px;
+  overflow: visible;
+  z-index: 200;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+}
+
+.marquee-track {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: scrollDown 12s linear infinite;
+}
+
+@keyframes scrollDown {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.marquee-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-family: 'Impact', 'Arial Black', fantasy;
+  font-size: 2.2rem;
+  font-weight: bold;
+  letter-spacing: 0.3em;
+  white-space: nowrap;
+
+  /* gradient animation */
+  background: linear-gradient(
+    0deg,
+    var(--nacre-pink),
+    var(--nacre-teal),
+    var(--nacre-lavender),
+    var(--pearl),
+    var(--nacre-pink)
+  );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+
+  animation: pearlFlow 4s linear infinite;
+  filter: drop-shadow(0 0 10px rgba(247, 202, 211, 0.3));
+}
+
+@keyframes pearlFlow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 0% 250%; }
+}
+
+/* machine wrapper */
+.gachapon-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: -20px;
+  margin-right: 60px;
+  transform: scale(1.35);
+  transform-origin: center center;
+}
+
+.machine-container {
+  position: relative;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.1s;
+}
+
+.machine-container.shaking {
+  animation: shake 0.08s infinite;
+}
+
+@keyframes shake {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(-3px, 2px) rotate(-1deg); }
+  50% { transform: translate(3px, -2px) rotate(1deg); }
+  75% { transform: translate(-2px, 3px) rotate(0deg); }
+  100% { transform: translate(2px, -3px) rotate(-1deg); }
+}
+
+/* speech bubble */
+.speech-bubble {
+  position: absolute;
+  left: -150px;
+  top: 130px;
+  transform: scale(0.9);
+  background: #fff;
+  color: #eeb5c9;
+  padding: 12px 15px;
+  border-radius: 20px;
+  border: 3px solid #c0a9d4;
+  font-family: 'Comic Sans MS', cursive;
+  font-size: 1.4rem;
+  line-height: 1.3;
+  max-width: 100px;
+  text-align: center;
+  animation: wave 2s ease-in-out infinite;
+  box-shadow: 3px 3px 0 #333;
+  z-index: 10;
+}
+
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  right: -13px;
+  bottom: 15px;
+  width: 0;
+  height: 0;
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  border-left: 15px solid #fff;
+}
+
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  right: -20px;
+  bottom: 13px;
+  width: 0;
+  height: 0;
+  border-top: 14px solid transparent;
+  border-bottom: 14px solid transparent;
+  border-left: 18px solid #c0a9d4;
+  z-index: -1;
+}
+
+@keyframes wave {
+  0%, 100% { transform: rotate(-3deg) translateX(0); }
+  50% { transform: rotate(3deg) translateX(5px); }
+}
+
+/* display */
+.machine-display {
+  position: relative;
+  width: 260px;
+  height: 200px;
+  background: linear-gradient(180deg, var(--shell-pink) 0%, var(--shell-lavender) 100%);
+  border-radius: 20px 20px 10px 10px;
+  border: 4px solid var(--pearl);
+  box-shadow: 0 5px 20px rgba(196, 168, 214, 0.3), inset 0 2px 10px rgba(255,255,255,0.15);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: visible;
+}
+
+.display-frame {
+  width: 180px;
+  height: 160px;
+  background: linear-gradient(180deg, #1a1225 0%, #0a0812 100%);
+  border-radius: 15px;
+  border: 3px solid var(--shell-lavender);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.starburst-gradient-bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--starburst-start) 0%, var(--starburst-end) 100%);
+  z-index: 1;
+}
+
+/* starburst background */
+.starburst-bg {
+  position: absolute;
+  width: 150%;
+  height: 150%;
+  background: radial-gradient(circle at center, var(--shell-teal) 0%, transparent 40%),
+              radial-gradient(circle at center, var(--shell-lavender) 0%, transparent 60%);
+  animation: rotateStarburst 8s linear infinite;
+  z-index: 2;
+  opacity: 0.7;
+  mix-blend-mode: screen;
+}
+
+@keyframes rotateStarburst {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* preview image */
+.preview-prize {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  z-index: 3;
+  filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));
+  animation: bobPrize 2s ease-in-out infinite;
+  transition: opacity 0.3s;
+}
+
+@keyframes bobPrize {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* loot bubble */
+.loot-bubble {
+  position: absolute;
+  top: -15px;
+  right: -30px;
+  width: 90px;
+  height: 90px;
+  cursor: pointer;
+  z-index: 10;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.loot-bubble img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(247, 202, 211, 0.4));
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.loot-bubble:hover {
+  animation: pulse 0.5s ease-in-out infinite;
+}
+
+/* machine body */
+.machine-body {
+  width: 280px;
+  height: 200px;
+  background: linear-gradient(180deg, var(--shell-lavender) 0%, var(--shell-teal) 100%);
+  border-radius: 10px 10px 20px 20px;
+  border: 4px solid var(--pearl);
+  border-top: 2px solid var(--shell-pink);
+  position: relative;
+  box-shadow: 0 10px 30px rgba(125, 196, 180, 0.2);
+}
+
+/* knob */
+.knob {
+  position: absolute;
+  left: 25px;
+  top: 50px;
+  width: 55px;
+  height: 55px;
+  background: radial-gradient(circle at 35% 35%, var(--pearl), var(--shell-pink), var(--panel-bg));
+  border-radius: 50%;
+  border: 3px solid var(--pearl);
+  cursor: grab;
+  box-shadow: 0 0 12px rgba(240, 181, 200, 0.3), 0 3px 10px rgba(0,0,0,0.3);
+  z-index: 5;
+}
+
+.knob:active {
+  cursor: grabbing;
+}
+
+.knob::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 15px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 2px;
+}
+
+/* coin slot */
+.coin-slot {
+  position: absolute;
+  left: 90px;
+  top: 55px;
+  z-index: 5;
+}
+
+.coin-slot a {
+  text-decoration: none;
+  display: block;
+}
+
+.slot-visual {
+  width: 25px;
+  height: 45px;
+  background: linear-gradient(180deg, var(--panel-bg) 0%, #222 50%, var(--panel-bg) 100%);
+  border-radius: 12px;
+  border: 2px solid var(--shell-lavender);
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+  position: relative;
+  transition: box-shadow 0.3s;
+}
+
+.coin-slot:hover .slot-visual {
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.5), 0 0 12px var(--pearl);
+}
+
+.slot-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--panel-bg);
+  color: var(--pearl);
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-family: 'Comic Sans MS', cursive;
+  font-size: 0.65rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  border: 1px solid var(--shell-lavender);
+  box-shadow: 0 0 10px rgba(196, 168, 214, 0.2);
+}
+
+.coin-slot:hover .slot-tooltip {
+  opacity: 1;
+}
+
+/* decor square */
+.decor-square {
+  position: absolute;
+  left: 20px;
+  top: 120px;
+  width: 90px;
+  height: 50px;
+  background: linear-gradient(180deg, var(--shell-pink) 0%, var(--shell-lavender) 100%);
+  border: 2px solid var(--shell-teal);
+  border-radius: 8px;
+  box-shadow: inset 0 2px 5px rgba(255,255,255,0.1), 0 2px 5px rgba(0,0,0,0.2);
+  z-index: 4;
+}
+
+.decor-square::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 30px;
+  background: linear-gradient(180deg, var(--panel-bg) 0%, #222 100%);
+  border-radius: 4px;
+  border: 1px solid var(--shell-lavender);
+}
+
+.decor-square::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 15px;
+  background: linear-gradient(180deg, #222 0%, #333 100%);
+  border-radius: 3px;
+  border: 1px solid #555;
+}
+
+/* chute */
+.chute {
+  position: absolute;
+  right: 20px;
+  top: 30px;
+  width: 100px;
+  height: 80px;
+  background: linear-gradient(180deg, var(--panel-bg) 0%, var(--black) 100%);
+  border-radius: 50px 50px 15px 15px;
+  border: 3px solid var(--shell-lavender);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  overflow: visible;
+  padding-bottom: 10px;
+}
+
+.dispensed-capsule {
+  width: 50px;
+  height: 50px;
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  opacity: 0;
+  transition: none;
+  z-index: 1;
+}
+
+.dispensed-capsule.drop {
+  animation: dropCapsule 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes dropCapsule {
+  0% {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  85% {
+    transform: translateX(-50%) translateY(75px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) translateY(70px);
+    opacity: 1;
+  }
+}
+
+.capsule-top {
+  width: 50px;
+  height: 25px;
+  background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.6) 0%, rgba(247, 202, 211, 0.3) 50%, rgba(247, 202, 211, 0.15) 100%);
+  border-radius: 25px 25px 0 0;
+  border: 2px solid rgba(247, 202, 211, 0.4);
+  border-bottom: none;
+  position: relative;
+}
+
+.capsule-top::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  width: 15px;
+  height: 8px;
+  background: rgba(255,255,255,0.4);
+  border-radius: 50%;
+  transform: rotate(-20deg);
+}
+
+.capsule-bottom {
+  width: 50px;
+  height: 25px;
+  border-radius: 0 0 25px 25px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top: none;
+  z-index: 3;
+  position: relative;
+  background-color: transparent;
+}
+
+.capsule-bottom::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(255,255,255,0.4);
+  border-radius: 2px;
+}
+
+.capsule-prize-img {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  z-index: 2;
+}
+
+/* decor stars */
+.decor-stars {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.9rem;
+  color: var(--pearl);
+  letter-spacing: 10px;
+  text-shadow: 0 0 8px var(--pearl), 0 0 15px rgba(240, 230, 246, 0.3);
+  z-index: 6;
+  opacity: 0.9;
+}
+
+/* overlays */
+
+/* results overlay */
+.results-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.results-overlay.active {
+  display: flex;
+}
+
+.dim-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(5, 5, 5, 0.85);
+}
+
+/* cloud overlay */
+.cloud-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 500px;
+  height: 300px;
+  opacity: 0.5;
+}
+
+.cloud-overlay img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.you-got-text {
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Impact', 'Arial Black', fantasy;
+  font-size: 3rem;
+  color: var(--nacre-teal);
+  text-shadow: 0 0 20px rgba(168, 216, 204, 0.5), 0 0 40px rgba(168, 216, 204, 0.2);
+  animation: waggle 0.8s ease-in-out infinite;
+  z-index: 2;
+}
+
+@keyframes waggle {
+  0%, 100% { transform: translateX(-50%) rotate(-2deg); }
+  50% { transform: translateX(-50%) rotate(2deg); }
+}
+
+.results-capsule {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  z-index: 3;
+  animation: floatCapsule 2s ease-in-out infinite;
+}
+
+@keyframes floatCapsule {
+  0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+  50% { transform: translate(-50%, -50%) translateY(-10px); }
+}
+
+.rc-top {
+  width: 120px;
+  height: 60px;
+  background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.7) 0%, rgba(247, 202, 211, 0.3) 50%, rgba(247, 202, 211, 0.15) 100%);
+  border-radius: 60px 60px 0 0;
+  border: 3px solid rgba(247, 202, 211, 0.5);
+  border-bottom: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.rc-top::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 15px;
+  width: 35px;
+  height: 15px;
+  background: rgba(255,255,255,0.5);
+  border-radius: 50%;
+  transform: rotate(-20deg);
+}
+
+.rc-bottom {
+  width: 120px;
+  height: 60px;
+  border-radius: 0 0 60px 60px;
+  border: 3px solid rgba(255,255,255,0.4);
+  border-top: none;
+  z-index: 3;
+  position: relative;
+  background-color: transparent;
+}
+
+.rc-bottom::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.4);
+  border-radius: 2px;
+}
+
+.rc-prize-img {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  z-index: 2;
+}
+
+.results-btn {
+  position: absolute;
+  bottom: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--shell-lavender);
+  color: var(--panel-bg);
+  border: 3px solid var(--pearl);
+  padding: 12px 35px;
+  font-family: 'Impact', 'Arial Black', fantasy;
+  font-size: 1.3rem;
+  cursor: pointer;
+  border-radius: 25px;
+  box-shadow: 0 0 20px rgba(196, 168, 214, 0.3), 0 5px 15px rgba(0,0,0,0.3);
+  text-shadow: 0 0 5px rgba(240, 230, 246, 0.5);
+  z-index: 5;
+  transition: all 0.3s;
+}
+
+.results-btn:hover {
+  background: var(--pearl);
+  color: var(--panel-bg);
+  box-shadow: 0 0 30px var(--pearl);
+}
+
+.results-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: 2px solid var(--shell-teal);
+  color: var(--shell-teal);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.results-close:hover {
+  background: var(--shell-teal);
+  color: var(--panel-bg);
+  box-shadow: 0 0 15px var(--shell-teal);
+}
+
+/* info overlay */
+.info-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 150;
+}
+
+.info-overlay.active {
+  display: flex;
+}
+
+.info-box {
+  position: relative;
+  background: var(--panel-bg);
+  border: 3px dashed var(--shell-lavender);
+  border-radius: 20px;
+  padding: 30px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(196, 168, 214, 0.15), 0 10px 40px rgba(0,0,0,0.5);
+  z-index: 2;
+  animation: popIn 0.4s ease-out;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.5); opacity: 0; }
+  70% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.info-close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  color: var(--shell-pink);
+  font-size: 1.5rem;
+  cursor: pointer;
+  text-shadow: 0 0 5px var(--shell-pink);
+  transition: transform 0.2s;
+}
+
+.info-close:hover {
+  transform: scale(1.3);
+}
+
+.info-header h2 {
+  font-family: 'Impact', 'Arial Black', fantasy;
+  font-size: 1.9rem;
+  color: var(--nacre-teal);
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(168, 216, 204, 0.3);
+}
+
+.info-subtitle {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 1.2rem;
+  color: var(--shell-pink);
+  margin-top: 5px;
+}
+
+.info-divider {
+  width: 80%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--shell-lavender), transparent);
+  margin: 15px auto;
+}
+
+.info-desc {
+  font-family: 'Comic Sans MS', cursive;
+  font-size: 0.95rem;
+  color: #ccc;
+  line-height: 1.5;
+  margin-bottom: 15px;
+}
+
+.info-prize-area {
+  position: relative;
+  height: 150px;
+  margin: 15px 0;
+}
+
+.info-prize-img {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  z-index: 2;
+  animation: floatPrize 2s ease-in-out infinite;
+}
+
+@keyframes floatPrize {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-8px); }
+}
+
+.opened-capsule {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 80px;
+}
+
+.oc-top {
+  width: 80px;
+  height: 40px;
+  background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.5) 0%, rgba(247, 202, 211, 0.2) 100%);
+  border-radius: 40px 40px 0 0;
+  border: 2px solid rgba(247, 202, 211, 0.3);
+  border-bottom: none;
+  transform: rotate(-15deg) translateX(-20px);
+}
+
+.oc-bottom {
+  width: 80px;
+  height: 40px;
+  border-radius: 0 0 40px 40px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top: 1px solid rgba(255,255,255,0.2);
+  transform: rotate(15deg) translateX(20px);
+}
+
+.info-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 10px 0;
+}
+
+.info-field {
+  font-family: 'Impact', 'Arial Black', fantasy;
+  font-size: 1.2rem;
+  color: var(--shell-lavender);
+}
+
+.info-link {
+  display: inline-block;
+  margin-top: 10px;
+  color: var(--nacre-teal);
+  text-decoration: none;
+  font-family: 'Impact', 'Arial Black', fantasy;
+  font-size: 1.3rem;
+  border: 1px solid var(--nacre-teal);
+  padding: 5px 15px;
+  border-radius: 15px;
+  transition: all 0.3s;
+}
+
+.info-link:hover {
+  background: var(--nacre-teal);
+  color: var(--panel-bg);
+}
+
+/* pool overlay */
+.pool-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 120;
+}
+
+.pool-overlay.active {
+  display: flex;
+}
+
+.pool-box {
+  position: relative;
+  background: var(--panel-bg);
+  border: 3px dashed var(--shell-lavender);
+  border-radius: 20px;
+  padding: 25px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(196, 168, 214, 0.15), 0 10px 40px rgba(0,0,0,0.5);
+  z-index: 2;
+  overflow: hidden;
+}
+
+.pool-box h2 {
+  font-family: 'Impact', 'Arial Black', fantasy;
+  font-size: 2rem;
+  color: var(--nacre-pink);
+  text-shadow: 0 0 10px rgba(247, 202, 211, 0.3);
+  margin-bottom: 15px;
+}
+
+.pool-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 10px;
+  margin-bottom: 15px;
+}
+
+.pool-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.pool-grid::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.3);
+  border-radius: 4px;
+}
+
+.pool-grid::-webkit-scrollbar-thumb {
+  background: var(--shell-teal);
+  border-radius: 4px;
+}
+
+.pool-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.pool-item:hover {
+  transform: scale(1.1);
+}
+
+.pool-capsule {
+  width: 70px;
+  height: 80px;
+  position: relative;
+  margin-bottom: 5px;
+}
+
+.pool-capsule .pc-top {
+  width: 70px;
+  height: 40px;
+  background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.6) 0%, rgba(247, 202, 211, 0.3) 100%);
+  border-radius: 35px 35px 0 0;
+  border: 2px solid rgba(247, 202, 211, 0.4);
+  border-bottom: none;
+  position: relative;
+}
+
+.pool-capsule .pc-top::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 10px;
+  width: 18px;
+  height: 8px;
+  background: rgba(255,255,255,0.4);
+  border-radius: 50%;
+  transform: rotate(-20deg);
+}
+
+.pool-capsule .pc-bottom {
+  width: 70px;
+  height: 40px;
+  border-radius: 0 0 35px 35px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top: none;
+  z-index: 3;
+  position: relative;
+}
+
+.pool-capsule .pc-bottom::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(255,255,255,0.4);
+  border-radius: 2px;
+}
+
+.pool-capsule .pc-prize {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 35px;
+  height: 35px;
+  object-fit: contain;
+  z-index: 2;
+}
+
+.pool-item span {
+  font-family: 'Comic Sans MS', cursive;
+  font-size: 0.95rem;
+  color: #aaa;
+}
+
+.pool-close {
+  background: none;
+  border: 2px solid var(--shell-lavender);
+  color: var(--shell-lavender);
+  padding: 8px 25px;
+  font-family: 'Impact', 'Arial Black', fantasy;
+  font-size: 1.2rem;
+  cursor: pointer;
+  border-radius: 15px;
+  transition: all 0.3s;
+}
+
+.pool-close:hover {
+  background: var(--shell-lavender);
+  color: #fff;
+}
+
+.capsule-opening .rc-top {
+  animation: openTop 0.5s forwards;
+}
+
+.capsule-opening .rc-bottom {
+  animation: openBottom 0.5s forwards;
+}
+
+.capsule-opening .rc-prize-img {
+  animation: prizeReveal 0.8s 0.3s forwards;
+}
+
+@keyframes openTop {
+  to { transform: translateY(-30px) rotate(-20deg); opacity: 0.5; }
+}
+
+@keyframes openBottom {
+  to { transform: translateY(30px) rotate(20deg); opacity: 0.5; }
+}
+
+@keyframes prizeReveal {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  100% { transform: translate(-50%, -80%) scale(1.5); }
+}
+
+/* responsive */
+@media (max-width: 600px) {
+  .gachapon-wrapper {
+    transform: scale(0.95);
+    margin-right: 40px;
+  }
+
+  .marquee-text {
+    font-size: 1.8rem;
+  }
+
+  .speech-bubble {
+    left: -110px;
+    top: 180px;
+    transform: scale(0.85);
+  }
+
+  .machine-container {
+    transform: scale(0.85);
+  }
+
+  .pool-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .you-got-text {
+    font-size: 2rem;
+  }
+
+  .gachapon-wrapper {
+    margin-right: 60px;
+  }
+}
+  </style>
+</head>
+<body>
+  <div class="tiled-bg"></div>
+
+  <!-- return button -->
+  <a href="/" class="return-btn">← return to homepage</a>
+
+  <div class="marquee-wrapper">
+    <div class="marquee-track">
+      <div class="marquee-text">PRIZE GACHAPON</div>
+    </div>
+  </div>
+
+  <div class="gachapon-wrapper">
+    <div class="machine-container" id="machine">
+      <!-- speech bubble text -->
+      <div class="speech-bubble" id="speech-bubble">
+        <p>Drag<br>the knob<br>to spin!</p>
+      </div>
+      <div class="machine-display">
+        <div class="display-frame">
+          <div class="starburst-gradient-bg"></div>
+          <div class="starburst-bg" id="starburst-bg"></div>
+          <!-- preview image -->
+          <img src="" alt="Preview Prize" class="preview-prize" id="preview-prize">
+        </div>
+        <!-- loot bubble -->
+        <div class="loot-bubble" id="loot-bubble">
+          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 90 90'%3E%3Ccircle cx='45' cy='45' r='40' fill='%23f7cad3' opacity='0.3'/%3E%3Ctext x='45' y='50' text-anchor='middle' fill='%23f0e6f6' font-size='12' font-family='sans-serif'%3ELOOT!%3C/text%3E%3C/svg%3E" alt="LOOT!">
+        </div>
+      </div>
+      <div class="machine-body">
+        <div class="knob" id="knob"></div>
+        <!-- coin slot -->
+        <div class="coin-slot" id="coin-slot">
+          <a href="#" target="_blank" rel="noopener">
+            <div class="slot-visual"></div>
+            <div class="slot-tooltip">Please insert coin</div>
+          </a>
+        </div>
+        <div class="decor-square" id="decor-square"></div>
+        <div class="chute" id="chute">
+          <div class="dispensed-capsule" id="dispensed-capsule">
+            <div class="capsule-top" id="capsule-top"></div>
+            <div class="capsule-bottom" id="capsule-bottom"></div>
+            <img src="" alt="" class="capsule-prize-img" id="capsule-prize-img">
+          </div>
+        </div>
+        <div class="decor-stars">
+          <span>✦</span><span>★</span><span>✦</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- results overlay -->
+  <div class="results-overlay" id="results-overlay">
+    <div class="dim-bg" id="results-dim-bg"></div>
+    <!-- cloud overlay -->
+    <div class="cloud-overlay" id="cloud-overlay">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='300' viewBox='0 0 500 300'%3E%3Cellipse cx='250' cy='150' rx='200' ry='100' fill='white' opacity='0.08'/%3E%3C/svg%3E" alt="cloud">
+    </div>
+    <div class="you-got-text" id="you-got-text">YOU GOT:</div>
+    <div class="results-capsule" id="results-capsule">
+      <div class="rc-top" id="rc-top"></div>
+      <div class="rc-bottom" id="rc-bottom"></div>
+      <img src="" alt="" class="rc-prize-img" id="rc-prize-img">
+    </div>
+    <button class="results-btn" id="results-btn">OPEN PRIZE</button>
+    <button class="results-close" id="results-close"></button>
+  </div>
+
+  <!-- info overlay -->
+  <div class="info-overlay" id="info-overlay">
+    <div class="dim-bg" id="info-dim-bg"></div>
+    <div class="info-box" id="info-box">
+      <button class="info-close" id="info-close">✕</button>
+      <div class="info-header">
+        <h2 id="info-title"></h2>
+        <p class="info-subtitle" id="info-subtitle"></p>
+      </div>
+      <div class="info-divider"></div>
+      <p class="info-desc" id="info-desc"></p>
+      <div class="info-prize-area">
+        <img src="" alt="" class="info-prize-img" id="info-prize-img">
+        <div class="opened-capsule">
+          <div class="oc-top"></div>
+          <div class="oc-bottom"></div>
+        </div>
+      </div>
+      <div class="info-fields" id="info-fields"></div>
+      <a href="#" class="info-link" id="info-link" target="_blank"></a>
+    </div>
+  </div>
+
+  <!-- pool overlay -->
+  <div class="pool-overlay" id="pool-overlay">
+    <div class="dim-bg" id="pool-dim-bg"></div>
+    <div class="pool-box" id="pool-box">
+      <h2>ALL POSSIBLE DROPS!</h2>
+      <div class="pool-grid" id="pool-grid"></div>
+      <button class="pool-close" id="pool-close">CLOSE</button>
+    </div>
+  </div>
+
+  <!-- audio files -->
+  <audio id="sfx-rattle" src="" preload="auto"></audio>
+  <audio id="sfx-drop" src="" preload="auto"></audio>
+  <audio id="sfx-open" src="" preload="auto"></audio>
+  <audio id="ambientAudio" loop preload="auto">
+    <source src="" type="audio/mpeg">
+  </audio>
+
+  <script>
+/* prizes
+   each prize object:
+     id, name, subtitle, desc, img, color, fields, link, linkText */
+
+  const prizes = [
+    { 
+      id: 'crystal-orb', 
+      name: 'Crystal Orb', 
+      subtitle: 'A flickering sphere of captured starlight',
+      desc: 'This translucent orb hums gently in your hands, refracting distant constellations across your walls.',
+      img: '', 
+      color: '#ffa7a7',
+      type: 'card',
+      fields: ['Size: Ponderously Large', 'Rarity: Common'],
+      link: '#'
+    },
+    { 
+      id: 'dream-zine', 
+      name: 'Dream Zine', 
+      subtitle: 'A miniature booklet of surreal reveries',
+      desc: 'A pocket-sized collection of strange and lovely daydreams, illustrated in soft pastels.',
+      img: '', 
+      color: '#ff93f1',
+      type: 'card',
+      fields: ['Size: Teeny Tiny', 'Rarity: Common'],
+      link: null
+    },
+    { 
+      id: 'lucky-nugget', 
+      name: 'Lucky Nugget', 
+      subtitle: 'A tiny treasure of uncertain origin',
+      desc: 'Small, warm, and inexplicably precious. Could be a pebble. Could be pure gold.',
+      img: '', 
+      color: '#99c29b',
+      type: 'card',
+      fields: ['Size: Just a Lil Guy', 'Rarity: Common'],
+      link: null
+    },
+    { 
+      id: 'glass-eyes', 
+      name: 'A Handful of Glass Eyes', 
+      subtitle: 'They seem to be watching...',
+      desc: 'A handful of mismatched glass eyes in various colors. They definitely moved when you blinked.',
+      img: '', 
+      color: '#da9bff',
+      type: 'card',
+      fields: ['Size: Small', 'Rarity: Uncommon'],
+      link: null
+    },
+    { 
+      id: 'curious-hand', 
+      name: 'The Curious Hand', 
+      subtitle: 'A small, delicate sculpture',
+      desc: 'A hand-carved miniature hand, posed as if reaching for something just out of frame.',
+      img: '', 
+      color: '#ffbd66',
+      type: 'card',
+      fields: ['Size: Palm-Sized', 'Rarity: Common'],
+      link: null
+    },
+    {
+      id: 'time-locket', 
+      name: 'Time Locket', 
+      subtitle: 'A sealed trinket from another era',
+      desc: 'A brass locket that won\'t open, but ticks softly when held to the ear. Warmed by memories not your own.',
+      img: '', 
+      color: '#b8a7ff',
+      type: 'card',
+      fields: ['Size: The Size of a Lamp', 'Rarity: Rare'],
+      link: '#'
+    },
+    {
+      id: 'rusty-machine', 
+      name: 'The Ghost of a Machine', 
+      subtitle: 'An old mechanism reclaimed by moss',
+      desc: 'A miniature prize machine overtaken by tiny vines and rust. It still dispenses something when you turn the crank.',
+      img: '', 
+      color: '#7fbf9a',
+      type: 'card',
+      fields: ['Size: How did it fit in there!?', 'Rarity: Rare'],
+      link: null
+    },
+    { 
+      id: 'eclipse-photo', 
+      name: 'Photo of an Eclipse', 
+      subtitle: 'A moment frozen in silver',
+      desc: 'A polaroid of a total eclipse, taken from exactly the right place at exactly the right time.',
+      img: '', 
+      color: '#93cbff',
+      type: 'card',
+      fields: ['Size: Various', 'Rarity: Common'],
+      link: null
+    },
+    { 
+      id: 'ink-cap', 
+      name: 'The Ink Cap', 
+      subtitle: 'A mushroom that weeps darkness',
+      desc: 'A strange fungus that drips a deep indigo ink. Useful for writing letters to nobody in particular.',
+      img: '', 
+      color: '#5c5c5c',
+      type: 'card',
+      fields: ['Size: Average', 'Rarity: Uncommon'],
+      link: null
+    },
+    { 
+      id: 'perfect-berry', 
+      name: 'The Perfect Berry', 
+      subtitle: 'Flawless. Untouched. Delicious.',
+      desc: 'A single berry of impossible symmetry and deep blue hue. It looks too perfect to eat, but you probably should.',
+      img: '', 
+      color: '#809dfa',
+      type: 'card',
+      fields: ['Size: Perfect', 'Rarity: Common'],
+      link: null
+    },
+    { 
+      id: 'a-note', 
+      name: 'A Handwritten Note', 
+      subtitle: 'Someone was here before you',
+      desc: 'A scrap of paper with a single sentence in looping cursive: "This machine is older than it looks. Be gentle with it."',
+      img: '', 
+      color: '#97f8e0',
+      type: 'card',
+      fields: ['Size: Pocket-Sized', 'Rarity: Common'],
+      link: null
+    },
+    { 
+      id: 'strange-soda', 
+      name: 'Strange Soda', 
+      subtitle: 'A bottle of something celestial',
+      desc: 'A glass bottle filled with a gently glowing liquid that tastes like carbonated honey and lavender.',
+      img: '', 
+      color: '#c4deff',
+      type: 'card',
+      fields: ['Size: 11.3 fluid ounces', 'Rarity: Common'],
+      link: '#'
+    },
+    { 
+      id: 'pocket-friend', 
+      name: 'A Tiny Companion', 
+      subtitle: 'How did it fit in the capsule?',
+      desc: 'A very small, very soft creature that has decided you are now its person. It fits in your shirt pocket.',
+      img: '', 
+      color: '#97f8e0',
+      type: 'card',
+      fields: ['Size: Teeny', 'Rarity: Rare'],
+      link: null
+    }
+  ];
+
+  // dom elements
+  const machine = document.getElementById('machine');
+  const knob = document.getElementById('knob');
+  const coinSlot = document.getElementById('coin-slot');
+  const chute = document.getElementById('chute');
+  const dispensedCapsule = document.getElementById('dispensed-capsule');
+  const capsuleTop = document.getElementById('capsule-top');
+  const capsuleBottom = document.getElementById('capsule-bottom');
+  const capsulePrizeImg = document.getElementById('capsule-prize-img');
+  const previewPrize = document.getElementById('preview-prize');
+  const lootBubble = document.getElementById('loot-bubble');
+
+  const resultsOverlay = document.getElementById('results-overlay');
+  const resultsDimBg = document.getElementById('results-dim-bg');
+  const resultsCapsule = document.getElementById('results-capsule');
+  const rcTop = document.getElementById('rc-top');
+  const rcBottom = document.getElementById('rc-bottom');
+  const rcPrizeImg = document.getElementById('rc-prize-img');
+  const resultsBtn = document.getElementById('results-btn');
+  const resultsClose = document.getElementById('results-close');
+
+  const infoOverlay = document.getElementById('info-overlay');
+  const infoDimBg = document.getElementById('info-dim-bg');
+  const infoClose = document.getElementById('info-close');
+  const infoTitle = document.getElementById('info-title');
+  const infoSubtitle = document.getElementById('info-subtitle');
+  const infoDesc = document.getElementById('info-desc');
+  const infoPrizeImg = document.getElementById('info-prize-img');
+  const infoFields = document.getElementById('info-fields');
+  const infoLink = document.getElementById('info-link');
+
+  const poolOverlay = document.getElementById('pool-overlay');
+  const poolDimBg = document.getElementById('pool-dim-bg');
+  const poolGrid = document.getElementById('pool-grid');
+  const poolClose = document.getElementById('pool-close');
+
+  const sfxRattle = document.getElementById('sfx-rattle');
+  const sfxDrop = document.getElementById('sfx-drop');
+  const sfxOpen = document.getElementById('sfx-open');
+
+  // state
+  let isDragging = false;
+  let startAngle = 0;
+  let currentRotation = 0;
+  let totalRotation = 0;
+  let isSpinning = false;
+  let currentPrize = null;
+  let previewIndex = 0;
+
+  // preview rotation
+  setInterval(() => {
+    previewIndex = (previewIndex + 1) % prizes.length;
+    previewPrize.style.opacity = '0';
+    setTimeout(() => {
+      previewPrize.src = prizes[previewIndex].img;
+      previewPrize.style.opacity = '1';
+    }, 300);
+  }, 3000);
+
+  // pool grid
+  prizes.forEach((prize) => {
+    const item = document.createElement('div');
+    item.className = 'pool-item';
+    item.innerHTML = `
+      <div class="pool-capsule">
+        <div class="pc-top"></div>
+        <div class="pc-bottom" style="background: ${prize.color};"></div>
+        <img src="${prize.img}" alt="${prize.name}" class="pc-prize">
+      </div>
+      <span>${prize.name}</span>
+    `;
+    item.addEventListener('click', () => {
+      poolOverlay.classList.remove('active');
+      openInfoBox(prize);
+    });
+    poolGrid.appendChild(item);
+  });
+
+  // knob drag
+  function getAngle(e, element) {
+    const rect = element.getBoundingClientRect();
+    const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    const clientX = e.clientX || e.touches[0].clientX;
+    const clientY = e.clientY || e.touches[0].clientY;
+    return Math.atan2(clientY - center.y, clientX - center.x) * 180 / Math.PI;
+  }
+
+  knob.addEventListener('mousedown', startDrag);
+  knob.addEventListener('touchstart', startDrag, { passive: false });
+
+  function startDrag(e) {
+    if (isSpinning) return;
+    e.preventDefault();
+    isDragging = true;
+    startAngle = getAngle(e, knob);
+    document.addEventListener('mousemove', onDrag);
+    document.addEventListener('touchmove', onDrag, { passive: false });
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchend', endDrag);
+  }
+
+  function onDrag(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    const angle = getAngle(e, knob);
+    let delta = angle - startAngle;
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+    currentRotation += delta;
+    startAngle = angle;
+    knob.style.transform = `rotate(${currentRotation}deg)`;
+    totalRotation += Math.abs(delta);
+    if (totalRotation >= 360) {
+      totalRotation = 0;
+      triggerDispense();
+    }
+  }
+
+  function endDrag() {
+    isDragging = false;
+    document.removeEventListener('mousemove', onDrag);
+    document.removeEventListener('touchmove', onDrag);
+    document.removeEventListener('mouseup', endDrag);
+    document.removeEventListener('touchend', endDrag);
+  }
+
+  // prize dispense
+  function triggerDispense() {
+    if (isSpinning) return;
+    isSpinning = true;
+    isDragging = false;
+
+    currentPrize = prizes[Math.floor(Math.random() * prizes.length)];
+
+    machine.classList.add('shaking');
+    try { sfxRattle.play(); } catch(e) {}
+
+    setTimeout(() => {
+      machine.classList.remove('shaking');
+      dropCapsule();
+    }, 1500);
+  }
+
+  function dropCapsule() {
+    capsuleBottom.style.background = currentPrize.color;
+    capsulePrizeImg.src = currentPrize.img;
+    dispensedCapsule.classList.add('drop');
+    try { sfxDrop.play(); } catch(e) {}
+
+    setTimeout(() => {
+      showResults();
+    }, 800);
+  }
+
+  function showResults() {
+    resultsOverlay.classList.add('active');
+    rcBottom.style.background = currentPrize.color;
+    rcPrizeImg.src = currentPrize.img;
+  }
+
+  resultsBtn.addEventListener('click', () => {
+    resultsCapsule.classList.add('capsule-opening');
+    try { sfxOpen.play(); } catch(e) {}
+
+    setTimeout(() => {
+      resultsOverlay.classList.remove('active');
+      resultsCapsule.classList.remove('capsule-opening');
+      openInfoBox(currentPrize);
+    }, 1000);
+  });
+
+  resultsClose.addEventListener('click', () => {
+    closeResults();
+  });
+
+  resultsDimBg.addEventListener('click', () => {
+    closeResults();
+  });
+
+  function closeResults() {
+    resultsOverlay.classList.remove('active');
+    resultsCapsule.classList.remove('capsule-opening');
+    dispensedCapsule.classList.remove('drop');
+    setTimeout(() => {
+      dispensedCapsule.style.opacity = '0';
+    }, 300);
+    isSpinning = false;
+    currentRotation = 0;
+    knob.style.transform = 'rotate(0deg)';
+  }
+
+  // info box
+  function openInfoBox(prize) {
+    infoOverlay.classList.add('active');
+    infoTitle.textContent = prize.name;
+    infoSubtitle.textContent = prize.subtitle;
+    infoDesc.textContent = prize.desc;
+    infoPrizeImg.src = prize.img;
+
+    // capsule color
+    document.querySelector('.oc-bottom').style.background = prize.color;
+
+    if (prize.fields) {
+      prize.fields.forEach(field => {
+        const f = document.createElement('div');
+        f.className = 'info-field';
+        f.textContent = field;
+        infoFields.appendChild(f);
+      });
+    }
+
+    if (prize.link) {
+      infoLink.href = prize.link;
+      infoLink.textContent = prize.linkText || 'Link';
+      infoLink.style.display = 'inline-block';
+    } else {
+      infoLink.style.display = 'none';
+    }
+  }
+
+  infoClose.addEventListener('click', () => {
+    closeInfoBox();
+  });
+
+  infoDimBg.addEventListener('click', () => {
+    closeInfoBox();
+  });
+
+  function closeInfoBox() {
+    infoOverlay.classList.remove('active');
+
+    dispensedCapsule.classList.remove('drop');
+    setTimeout(() => {
+      dispensedCapsule.style.opacity = '0';
+    }, 300);
+    isSpinning = false;
+    currentRotation = 0;
+    knob.style.transform = 'rotate(0deg)';
+  }
+
+  // pool overlay
+  lootBubble.addEventListener('click', () => {
+    poolOverlay.classList.add('active');
+  });
+
+  poolClose.addEventListener('click', () => {
+    poolOverlay.classList.remove('active');
+  });
+
+  poolDimBg.addEventListener('click', () => {
+    poolOverlay.classList.remove('active');
+  });
+
+  // escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (infoOverlay.classList.contains('active')) {
+        closeInfoBox();
+      } else if (poolOverlay.classList.contains('active')) {
+        poolOverlay.classList.remove('active');
+      } else if (resultsOverlay.classList.contains('active')) {
+        closeResults();
+      }
+    }
+  });
+
+  // ambient audio
+  const ambientAudio = document.getElementById('ambientAudio');
+  if (ambientAudio) {
+    ambientAudio.volume = 0.15;
+    var ambientStarted = false;
+    function startAmbient() {
+      if (ambientStarted) return;
+      ambientAudio.play().catch(function() {});
+      ambientStarted = true;
+    }
+    document.addEventListener('click', startAmbient);
+    document.addEventListener('keydown', startAmbient);
+  }
+
+  </script>
+</body>
+</html>]]>
